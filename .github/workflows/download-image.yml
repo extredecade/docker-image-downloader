@@ -25,18 +25,15 @@ jobs:
       - name: Pull Docker Image
         run: |
           docker pull ${{ github.event.inputs.image }}
-          IMAGE_FILE="${{ env.IMAGE_NAME }}.tar"
-          docker save ${{ github.event.inputs.image }} -o "$IMAGE_FILE"
-          echo "Image saved as $IMAGE_FILE"
+          docker save ${{ github.event.inputs.image }} -o /tmp/image.tar
+          mv /tmp/image.tar ${{ env.IMAGE_NAME }}.tar
         env:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ env.TAG_NAME }}
-          name: Docker Image: ${{ github.event.inputs.image }}
+          tag_name: ${{ github.event.inputs.tag }}
+          name: ${{ github.event.inputs.tag }}
           files: ${{ env.IMAGE_NAME }}.tar
           overwrite: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
