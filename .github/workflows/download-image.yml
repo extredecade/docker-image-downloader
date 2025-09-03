@@ -34,6 +34,5 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event.inputs.tag }}
-          name: ${{ github.event.inputs.tag }}
+          name: Docker Image: ${{ github.event.inputs.image }}
           files: ${{ env.IMAGE_NAME }}.tar
-          overwrite: true
