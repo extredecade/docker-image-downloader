@@ -1,0 +1,42 @@
+name: Download Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: 'Docker image to download (e.g. ss93/tmhmm:latest)'
+        required: true
+        default: 'ss93/tmhmm:latest'
+      tag:
+        description: 'Tag for the release (e.g. v1.0)'
+        required: true
+        default: 'v1.0'
+
+jobs:
+  download-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse image name
+        id: parse
+        run: |
+          echo "IMAGE_NAME=$(echo ${{ github.event.inputs.image }} | sed 's/[:\/]/-/g')" >> $GITHUB_ENV
+          echo "TAG_NAME=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+
+      - name: Pull Docker Image
+        run: |
+          docker pull ${{ github.event.inputs.image }}
+          IMAGE_FILE="${{ env.IMAGE_NAME }}.tar"
+          docker save ${{ github.event.inputs.image }} -o "$IMAGE_FILE"
+          echo "Image saved as $IMAGE_FILE"
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: Docker Image: ${{ github.event.inputs.image }}
+          files: ${{ env.IMAGE_NAME }}.tar
+          overwrite: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
