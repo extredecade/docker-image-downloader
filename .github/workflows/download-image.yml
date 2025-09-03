@@ -19,20 +19,19 @@ jobs:
       - name: Parse image name
         id: parse
         run: |
-          echo "IMAGE_NAME=$(echo ${{ github.event.inputs.image }} | sed 's/[:\/]/-/g')" >> $GITHUB_ENV
+          IMAGE_NAME=$(echo "${{ github.event.inputs.image }}" | sed 's/[:\/]/-/g')
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
           echo "TAG_NAME=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
 
-      - name: Pull Docker Image
+      - name: Pull and save Docker image
         run: |
           docker pull ${{ github.event.inputs.image }}
-          docker save ${{ github.event.inputs.image }} -o /tmp/image.tar
-          mv /tmp/image.tar ${{ env.IMAGE_NAME }}.tar
-        env:
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          docker save ${{ github.event.inputs.image }} -o "${{ env.IMAGE_NAME }}.tar"
+          ls -lh "${{ env.IMAGE_NAME }}.tar"
 
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag }}
-          name: Docker Image: ${{ github.event.inputs.image }}
+          tag_name: ${{ env.TAG_NAME }}
+          name: ${{ env.TAG_NAME }}
           files: ${{ env.IMAGE_NAME }}.tar
