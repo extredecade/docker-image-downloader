@@ -8,7 +8,7 @@ on:
         required: true
         default: 'hello-world:latest'
       tag:
-        description: 'Tag for the release (e.g. v1.0-tmhmm)'
+        description: 'Tag for the release (e.g. v1.0-tmhmm) - DO NOT use : or /'
         required: true
         default: 'v1.0-custom'
 
@@ -20,19 +20,26 @@ jobs:
   download-and-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Parse image name and sanitize tag
+      - name: Parse image name and sanitize tag (remove :, /, and trailing -)
         id: parse
         run: |
-          # 替换镜像名中的特殊字符（: /）为 -
+          # 替换镜像名中的 : 和 / 为 -
           IMAGE_NAME=$(echo "${{ github.event.inputs.image }}" | sed 's/[:\/]/-/g')
-          # 确保 tag 名称合法（不允许 :, / 等）
-          TAG_NAME=$(echo "${{ github.event.inputs.tag }}" | sed 's/[:\/]/-/g')
+          # 清理 tag：替换非法字符，并移除末尾的 -
+          TAG_NAME=$(echo "${{ github.event.inputs.tag }}" | sed 's/[:\/]/-/g' | sed 's/-$//')
+          # 确保不为空
+          if [ -z "$TAG_NAME" ]; then
+            echo "Error: tag name is empty after sanitization" >&2
+            exit 1
+          fi
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
 
-      - name: Pull Docker image and save as compressed tar.gz
+      - name: Pull Docker image and save as compressed .tar.gz
         run: |
+          echo "Pulling image: ${{ github.event.inputs.image }}"
           docker pull ${{ github.event.inputs.image }}
+          echo "Saving and compressing image..."
           docker save ${{ github.event.inputs.image }} | gzip > "${{ env.IMAGE_NAME }}.tar.gz"
           ls -lh "${{ env.IMAGE_NAME }}.tar.gz"
 
